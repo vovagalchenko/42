@@ -12,6 +12,26 @@ var schemas = {
     table.string('last_name', 45);
     table.string('img_url', 100); 
     table.string('enterprise_id', 11).index();
+    table.timestamps();
+  },
+  auth_credentials: function(table) {
+    table.bigIncrements('session_id');
+    table.string('user_id', 11).index().references("box_user_id").inTable("users");
+    table.string('access_token', 45).unique();
+    table.timestamps();
+  },
+  feeds: function(table) {
+/*
+    table.bigIncrements('feed_id');
+    table.string('owner_id', 11).index().references("box_user_id").inTable("users");
+    table.string('name', 45);
+    table.text('description');
+    table.string('last_post_id', 45);
+    table.string('enterprise_id', 11).index();
+    table.boolean('is_public');
+    table.boolean('is_invite_locked');
+    table.boolean('is_channel');
+*/
   }
 }
 
@@ -27,7 +47,9 @@ function createTableIfNeeded(tableName, workAfter)
 }
 
 createTableIfNeeded('users', function() {
-  knex.destroy(function() {
-    console.log("Finished");
+  createTableIfNeeded('auth_credentials', function() {
+    knex.destroy(function() {
+      console.log("Finished");
+    });
   });
 });
