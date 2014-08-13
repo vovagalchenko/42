@@ -40,7 +40,17 @@ var schemas = {
     table.boolean('is_following').notNullable();
     table.boolean('is_muting').notNullable();
     table.timestamps();
-  }
+  },
+  mentions: function(table) {
+    table.bigIncrements('mention_id').notNullable();
+    table.string('mentioner_user_id', 11).notNullable().index().references('box_user_id').inTable('users');
+    table.string('mentioned_entity_type', 11).notNullable();
+    table.string('mentioned_entity_id', 20).notNullable();
+    table.string('post_id', 45).notNullable();
+    table.timestamp('viewed_at');
+    table.timestamps();
+  },
+  
 }
 
 function createTableIfNeeded(tableName, workAfter)
@@ -66,8 +76,10 @@ schemaCreateDomain.run(function() {
     createTableIfNeeded('auth_credentials', function() {
       createTableIfNeeded('feeds', function() {
         createTableIfNeeded('members', function() {
-          knex.destroy(function() {
-            console.log("Finished");
+          createTableIfNeeded('mentions', function() {
+            knex.destroy(function() {
+              console.log("Finished");
+            });
           });
         });
       });
