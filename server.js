@@ -5,7 +5,8 @@ var url = require("url");
 var uuid = require("node-uuid");
 var router = require("./router.js");
 var exceptions = require("./lib/exceptions.js");
-var HTTPResponse = require("./lib/httpResponse.js");
+var HTTPResponseFactory = require("./lib/httpResponse.js");
+var HTTPBodyManager = require("./lib/httpBodyManager.js");
 var env = require("./environment.js");
 var port = 80;
 
@@ -29,16 +30,19 @@ http.createServer(function(request, responseWriter) {
   requestDomain = domain.create();
   requestDomain.add(request);
   requestDomain.add(responseWriter);
+  var responseFactory = new HTTPResponseFactory(request);
   requestDomain.on('error', function(error) {
-    handleError(error, request, responseWriter, log);
+    handleError(error, responseFactory, responseWriter, log);
   });
   // The request and responseWriter event emitters have already been created by the time
   // the requestDomain has been set up. Here, we bind them to the requestDomain explicitly.
   requestDomain.run(function() {
-    var parsedUrl = url.parse(request.url);
+    var httpBodyManager = new HTTPBodyManager(request, log);
+    var parsedUrl = url.parse(request.url, true);
     var controller = router.getController(request.method, parsedUrl.pathname, log);
-    var response = controller.execute();
-    respond(responseWriter, response, log);
+    controller.execute(httpBodyManager, parsedUrl.query, responseFactory, function(response) {
+      respond(responseWriter, response, log);
+    });
   });
 }).listen(port);
 
@@ -53,11 +57,11 @@ function respond(responseWriter, response, log) {
   log.info({
     'processingTime': response.processingTime,
     'statusCode': response.statusCode,
+    'contentLength': body.length,
   }, "Finished processing request");
 }
 
-function handleError(err, request, responseWriter, log) {
-  log.error({ 'err' : err });
+function handleError(err, responseFactory, responseWriter, log) {
   var statusCode = 500;
   var message = "Unexpected server error";
   if (typeof err.statusCode != 'undefined') {
@@ -65,7 +69,10 @@ function handleError(err, request, responseWriter, log) {
   }
   if (typeof err.apiErrorMessage != 'undefined') {
     message = err.apiErrorMessage;
+    log.warn({ 'err' : err });
+  } else {
+    log.error({ 'err' : err });
   }
-  var httpResponse = new HTTPResponse(statusCode, {}, {error: message}, request);
+  var httpResponse = responseFactory.create(statusCode, {}, {error: message});
   respond(responseWriter, httpResponse, log);
 }

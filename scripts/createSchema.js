@@ -53,15 +53,18 @@ var schemas = {
   
 }
 
-function createTableIfNeeded(tableName, workAfter)
+var Q = require('Q');
+function createTableIfNeeded(tableName)
 {
+  var deferred = Q.defer();
   knex.schema.hasTable(tableName).then(function(exists) {
     if (exists) {
-      workAfter();
+      deferred.resolve();
     } else {
-      knex.schema.createTable(tableName, schemas[tableName]).then(workAfter);
+      knex.schema.createTable(tableName, schemas[tableName]).then(function() { deferred.resolve(); });
     }
   });
+  return deferred.promise;
 }
 
 var domain = require('domain');
@@ -72,17 +75,18 @@ schemaCreateDomain.on('error', function(error) {
 });
 
 schemaCreateDomain.run(function() {
-  createTableIfNeeded('users', function() {
-    createTableIfNeeded('auth_credentials', function() {
-      createTableIfNeeded('feeds', function() {
-        createTableIfNeeded('members', function() {
-          createTableIfNeeded('mentions', function() {
-            knex.destroy(function() {
-              console.log("Finished");
-            });
-          });
-        });
+  createTableIfNeeded('users')
+    .then(function() {
+      return Q.all([
+        createTableIfNeeded('auth_credentials'),
+        createTableIfNeeded('mentions'),
+        createTableIfNeeded('feeds')
+          .then(function() { createTableIfNeeded('members'); })
+      ]);
+    })
+    .fin(function() {
+      knex.destroy(function() {
+        console.log("Finished");
       });
     });
-  });
 });

@@ -41,10 +41,12 @@ exports.getController = function(httpMethod, pathString, log) {
   }
 
   var controllerPath = "./controllers/" + resourceType + "/" + stringComponentsToCamelcase(actionComponents) + ".js";
+  log.info("Looking for controller at: %s", controllerPath);
   try {
     var Controller = require(controllerPath);
-    return new Controller(resourceId, parentResourceId, log);
+    return new Controller(resourceId, log);
   } catch (err) {
+    log.error(err);
     throw exceptions.UnprocessableEntity(util.format("%s %s: Cannot %s of type <%s>. This operation is not supported.", httpMethod, pathString, actionComponents.join(' '), resourceType));
   }
 }
