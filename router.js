@@ -46,7 +46,7 @@ exports.getController = function(httpMethod, pathString, log) {
     var Controller = require(controllerPath);
     return new Controller(resourceId, log);
   } catch (err) {
-    log.error(err);
+    log.warn(err);
     throw exceptions.UnprocessableEntity(util.format("%s %s: Cannot %s of type <%s>. This operation is not supported.", httpMethod, pathString, actionComponents.join(' '), resourceType));
   }
 }

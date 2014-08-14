@@ -40,9 +40,13 @@ http.createServer(function(request, responseWriter) {
     var httpBodyManager = new HTTPBodyManager(request, log);
     var parsedUrl = url.parse(request.url, true);
     var controller = router.getController(request.method, parsedUrl.pathname, log);
-    controller.execute(httpBodyManager, parsedUrl.query, responseFactory, function(response) {
-      respond(responseWriter, response, log);
-    });
+    controller.execute(httpBodyManager, parsedUrl.query, responseFactory)
+      .timeout(10000)
+      .then(function(response) {
+        respond(responseWriter, response, log);
+      }, function(error) {
+        handleError(error, responseFactory, responseWriter, log);
+      });
   });
 }).listen(port);
 
@@ -69,7 +73,7 @@ function handleError(err, responseFactory, responseWriter, log) {
   }
   if (typeof err.apiErrorMessage != 'undefined') {
     message = err.apiErrorMessage;
-    log.warn({ 'err' : err });
+    log.warn(message, { 'err' : err });
   } else {
     log.error({ 'err' : err });
   }
