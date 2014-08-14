@@ -81,10 +81,11 @@ schemaCreateDomain.run(function() {
         createTableIfNeeded('auth_credentials'),
         createTableIfNeeded('mentions'),
         createTableIfNeeded('feeds')
-          .then(function() { createTableIfNeeded('members'); })
+          .then(function() { return createTableIfNeeded('members'); })
       ]);
     })
     .fin(function() {
+      console.log("Cleaning up...");
       knex.destroy(function() {
         console.log("Finished");
       });
