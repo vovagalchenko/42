@@ -1,15 +1,10 @@
-var env = require("../environment.js");
-var knex = require('knex')({
-  client: 'mysql',
-  connection: env.dbConnection,
-  debug: true
-});
+var KnexFactory = require('../models/knex.js');
+var knex = KnexFactory.defaultPool;
 
 var schemas = {
   users: function(table) {
     table.string('box_user_id', 11).notNullable().primary();
-    table.string('first_name', 45).notNullable();
-    table.string('last_name', 45).notNullable();
+    table.string('name', 100).notNullable();
     table.string('img_url', 100); 
     table.string('enterprise_id', 11).index();
     table.timestamps();

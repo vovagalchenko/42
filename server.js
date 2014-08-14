@@ -77,6 +77,12 @@ function handleError(err, responseFactory, responseWriter, log) {
   } else {
     log.error({ 'err' : err });
   }
-  var httpResponse = responseFactory.create(statusCode, {}, {error: message});
+  var responseDict = { error: message };
+  if (err['troubleshootingData']) {
+    for (var key in err['troubleshootingData']) {
+      responseDict[key] = err['troubleshootingData'][key];
+    }
+  }
+  var httpResponse = responseFactory.create(statusCode, {}, responseDict);
   respond(responseWriter, httpResponse, log);
 }
