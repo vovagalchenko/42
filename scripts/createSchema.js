@@ -5,6 +5,7 @@ var schemas = {
   users: function(table) {
     table.string('box_user_id', 11).notNullable().primary();
     table.string('name', 100).notNullable();
+    table.string('email', 100).notNullable();
     table.string('img_url', 100); 
     table.string('enterprise_id', 11).index();
     table.timestamps();

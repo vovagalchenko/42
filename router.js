@@ -41,7 +41,6 @@ exports.getController = function(httpMethod, pathString, log) {
   }
 
   var controllerPath = "./controllers/" + resourceType + "/" + stringComponentsToCamelcase(actionComponents) + ".js";
-  log.info("Looking for controller at: %s", controllerPath);
   try {
     var Controller = require(controllerPath);
     return new Controller(resourceId, log);

@@ -86,7 +86,7 @@ var BaseController = function(resourceId, log) {
           return existingAuthCredentials.related('user');
         } else {
           var boxClient = new BoxClient(request.headers.authorization, log);
-          return boxClient.get('/users/me?fields=name,avatar_url,enterprise').then(function(responseDict) {
+          return boxClient.get('/users/me?fields=name,login,avatar_url,enterprise').then(function(responseDict) {
             if (!responseDict || !responseDict['id']) {
               throw exceptions.AuthenticationFailure("You've passed in an invalid access token.");
             }
@@ -96,6 +96,7 @@ var BaseController = function(resourceId, log) {
                   return modelManager.saveModel(loggedInUser, {
                     'box_user_id' : responseDict['id'],
                     'name' : responseDict['name'],
+                    'email' : responseDict['login'],
                     'img_url' : responseDict['avatar_url'],
                     'enterprise_id' : responseDict['enterprise']['id']
                   }, User);
