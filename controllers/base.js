@@ -39,7 +39,11 @@ var BaseController = function(resourceId, log) {
             var parameterDefinition = controller[propertyName];
             var required = parameterDefinition.required;
             var paramName = parameterDefinition.getApiAlias() || propertyName;
-            var extractedValue = parameterDefinition.extract(params[paramName]);
+            var rawValue = params[paramName];
+            if (typeof rawValue === 'undefined') {
+              rawValue = parameterDefinition.getDefaultValue();
+            }
+            var extractedValue = parameterDefinition.extract(rawValue);
             if (typeof extractedValue !== 'undefined') {
               controller[propertyName] = extractedValue;
               delete unusedParams[paramName];
