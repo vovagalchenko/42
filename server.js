@@ -10,12 +10,6 @@ var HTTPBodyManager = require("./lib/httpBodyManager.js");
 var env = require("./environment.js");
 var port = 80;
 
-var knex = require('knex')({
-  client: 'mysql',
-  connection: env.dbConnection
-});
-var bookshelf = require('bookshelf')(knex);
-
 logFactory("none").info("Starting server listening on port: %d", port);
 http.createServer(function(request, responseWriter) {
   var requestId = uuid.v1();

@@ -5,7 +5,7 @@
     "url": "https://github.com/vovagalchenko/42.git"
   },
   "scripts": {
-    "prepublish": "node scripts/createSchema.js"
+    "prepublish": "node scripts/createRelationalSchema.js"
   },
   "dependencies": {
     "bookshelf": "^0.7.7",
@@ -14,6 +14,7 @@
     "mysql": "^2.4.2",
     "node-uuid": "1.4.0",
     "q": "^1.0.1",
+    "thrift": "^0.9.1",
     "type-of-is": "^3.3.0"
   }
 }
