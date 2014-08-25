@@ -5,7 +5,7 @@
     "url": "https://github.com/vovagalchenko/42.git"
   },
   "scripts": {
-    "prepublish": "node scripts/createRelationalSchema.js"
+    "prepublish": "node scripts/createRelationalSchema.js; node scripts/configureHBase.js;"
   },
   "dependencies": {
     "bookshelf": "^0.7.7",
