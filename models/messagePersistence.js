@@ -3,10 +3,13 @@ var Q = require('q');
 var Mutation = require('./gen-nodejs/HBase_types.js').Mutation;
 var uuid = require('node-uuid');
 var crypto = require('crypto');
+var tableName = 'messages';
 
 function dateToByteArray(date) {
   var byteArray = [0, 0, 0, 0, 0, 0, 0, 0];
-  var milliseconds = date.getTime();
+  if (!date) return byteArray;
+  var maxDate = new Date(8640000000000000);
+  var milliseconds = maxDate.getTime() - date.getTime();
   for (var byteIndex = byteArray.length - 1; byteIndex >= 0; byteIndex--) {
     var leastSignificantByte= milliseconds & 0xff;
     byteArray[byteIndex] = leastSignificantByte;
@@ -73,7 +76,7 @@ exports.persistMessage = function(messageParams) {
         value: createdAt.getTime().toString(10)
       })
     ];
-    client.mutateRow('messages', rowKey, mutations, null, function(err, data) {
+    client.mutateRow(tableName, rowKey, mutations, null, function(err, data) {
       if (err) {
         throw err;
       } else {
@@ -85,6 +88,23 @@ exports.persistMessage = function(messageParams) {
           created_at: createdAt
         });
       }
+    });
+  });
+  return deferred.promise;
+}
+
+exports.scanMessages = function(feed, boundaryMessageId) {
+  var deferred = Q.defer();
+  var feedId = feed.id.toString(10);
+  if (!boundaryMessageId) {
+    boundaryMessageId = getRowKeyBinary(feedId);
+  }
+  var stopRowKey = getRowKeyBinary(feedId, new Date(0));
+  console.log('WOOOOOO', keyToHexString(boundaryMessageId));
+  HBase.getClient().then(function(client) {
+    console.log('WOAHHHH', keyToHexString(stopRowKey));
+    client.scannerOpenWithStop(tableName, boundaryMessageId, stopRowKey, ['d:feedId', 'd:authorUserId', 'd:taggedText', 'd:createdAt'], null, function(rows) {
+      deferred.resolve(rows);
     });
   });
   return deferred.promise;
