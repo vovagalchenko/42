@@ -80,9 +80,9 @@ exports.persistMessage = function(messageParams) {
         deferred.resolve({
           message_id: keyToHexString(rowKey),
           feed_id: feedId,
-          authorUserId: authorUserId,
-          taggedText: taggedText,
-          createdAt: createdAt
+          author_user_id: authorUserId,
+          tagged_text: taggedText,
+          created_at: createdAt
         });
       }
     });

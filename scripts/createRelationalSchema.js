@@ -21,7 +21,7 @@ var schemas = {
     table.string('owner_id', 11).index().references("box_user_id").inTable("users");
     table.string('name', 45);
     table.text('description');
-    table.string('last_post_id', 45);
+    table.string('last_message_id', 52);
     table.string('enterprise_id', 11).index();
     table.boolean('is_public').notNullable();
     table.boolean('is_invite_locked').notNullable();
@@ -32,7 +32,7 @@ var schemas = {
     table.bigIncrements('member_id').notNullable();
     table.string('user_id', 11).notNullable().index().references('box_user_id').inTable('users');
     table.bigInteger('feed_id', 20).unsigned().notNullable().index().references('feed_id').inTable('feeds');
-    table.string('last_read_post', 45);
+    table.string('last_read_message_id', 52);
     table.boolean('is_following').notNullable();
     table.boolean('is_muting').notNullable();
     table.timestamps();
@@ -42,7 +42,7 @@ var schemas = {
     table.string('mentioner_user_id', 11).notNullable().index().references('box_user_id').inTable('users');
     table.string('mentioned_entity_type', 11).notNullable();
     table.string('mentioned_entity_id', 20).notNullable();
-    table.string('post_id', 45).notNullable();
+    table.string('message_id', 52).notNullable();
     table.timestamp('viewed_at');
     table.timestamps();
   },

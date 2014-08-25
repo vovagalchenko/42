@@ -38,7 +38,7 @@ var CreateFeedController = function(resourceId, log) {
       'owner_id' : authenticatedUser.id,
       'name' : this.name,
       'description' : this.description,
-      'last_post_id' : null,
+      'last_message_id' : null,
       'enterprise_id' : authenticatedUser.get('enterprise_id'),
       'is_public' : this.isPublic,
       'is_invite_locked' : this.isMembershipLocked,
