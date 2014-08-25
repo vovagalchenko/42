@@ -2,9 +2,9 @@ var BaseController = require('../base.js');
 var Parameter = require('../../lib/parameter.js');
 var MessagePersistence = require('../../models/messagePersistence.js');
 var exceptions = require('../../lib/exceptions.js');
-var Feed = require('../../models/feed.js');
-var Member = require('../../models/member.js');
 var modelManager = require('../../models/modelManager.js');
+var feedPermissionChecker = require('../../models/feedPermissions.js');
+var Feed = require('../../models/feed.js');
 
 var CreateMessageController = function(resourceId, log) {
   BaseController.apply(this, arguments);
@@ -18,27 +18,14 @@ var CreateMessageController = function(resourceId, log) {
 
   this.run = function(authenticatedUser, responseFactory) {
     var me = this;
-    return new Feed({ 'feed_id' : this.feedId }).fetch()
+    return feedPermissionChecker.isUserAuthorizedToPost(authenticatedUser, this.feedId)
       .then(function(feed) {
         if (feed) {
-          if (feed.get('is_public')) {
-            return me._persistMessage(authenticatedUser, feed).then(function(message) {
-              return responseFactory.success(message);
-            });
-          } else {
-            return new Member({ 'user_id' : authenticatedUser.id, 'feed_id' : this.feedId }).fetch()
-              .then(function(member) {
-                if (member) {
-                  return me._persistMessage(authenticatedUser, feed).then(function(message) {
-                    return responseFactory.success(message);
-                  });
-                } else {
-                  throw exceptions.Forbidden('You are not authorized to post messages to feed <' + this.feedId + '>');
-                }
-              });
-          }
+          return me._persistMessage(authenticatedUser, feed).then(function(message) {
+            return responseFactory.success(message);
+          });
         } else {
-          throw exceptions.UnprocessableEntity('There is no feed for the provided feed id <' + this.feedId + '>');
+          throw exceptions.Forbidden('You are not authorized to post messages to feed <' + this.feedId + '>');
         }
       });
   }
