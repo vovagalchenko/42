@@ -22,7 +22,7 @@ var ListMessagesController = function(resourceId, log) {
     return feedPermissionChecker.isUserAuthorizedToView(authenticatedUser, this.feedId)
       .then(function(feed) {
         if (feed) {
-          return MessagePersistence.scanMessages(feed, this.lastMessageId).then(function(messages) {
+          return MessagePersistence.scanMessages(feed, this.lastMessageId, me.limit).then(function(messages) {
             return responseFactory.success({ 'messages' : messages });
           });
         } else {

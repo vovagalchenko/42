@@ -20,14 +20,17 @@ function dateToByteArray(date) {
 
 function keyToHexString(binKey) {
   var result = "";
+  var debug = [];
   for (var i = 0; i < binKey.length; i++) {
     var charCode = binKey.charCodeAt(i);
+    debug.push(charCode);
     var str = charCode.toString(16);
     if (str.length === 1) {
       str = '0' + str;
     }
     result += str;
   }
+  console.log(debug);
   return result;
 }
 
@@ -93,18 +96,27 @@ exports.persistMessage = function(messageParams) {
   return deferred.promise;
 }
 
-exports.scanMessages = function(feed, boundaryMessageId) {
+exports.scanMessages = function(feed, boundaryMessageId, limit) {
   var deferred = Q.defer();
   var feedId = feed.id.toString(10);
   if (!boundaryMessageId) {
     boundaryMessageId = getRowKeyBinary(feedId);
   }
+  boundaryMessageId = '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00';
   var stopRowKey = getRowKeyBinary(feedId, new Date(0));
+  var stopRowKey = '\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF';
   console.log('WOOOOOO', keyToHexString(boundaryMessageId));
   HBase.getClient().then(function(client) {
     console.log('WOAHHHH', keyToHexString(stopRowKey));
-    client.scannerOpenWithStop(tableName, boundaryMessageId, stopRowKey, ['d:feedId', 'd:authorUserId', 'd:taggedText', 'd:createdAt'], null, function(rows) {
-      deferred.resolve(rows);
+    client.scannerOpen(tableName, boundaryMessageId, ['d:feedId', 'd:authorUserId', 'd:taggedText', 'd:createdAt'], {}, function(io, scannerId) {
+      console.log("got scanner", io, scannerId, limit);
+      client.scannerGetList(scannerId, limit, function(res, other) {
+        console.log("got result", res, other);
+        client.scannerClose(scannerId, function(closeRes) {
+          console.log("closed", closeRes);
+        });
+        deferred.resolve(res);
+      });
     });
   });
   return deferred.promise;
