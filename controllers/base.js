@@ -45,7 +45,6 @@ var BaseController = function(resourceId, log) {
             }
             var extractedValue = parameterDefinition.extract(rawValue);
             if (typeof extractedValue !== 'undefined') {
-              controller[propertyName] = extractedValue;
               delete unusedParams[paramName];
             } else if (required && typeof extractedValue === 'undefined') {
               missingParams[paramName] = {
@@ -55,6 +54,7 @@ var BaseController = function(resourceId, log) {
                 missingParams[paramName]['description'] = parameterDefinition.getDescription();
               }
             }
+            controller[propertyName] = extractedValue;
           }
         }
         if (!isEmpty(missingParams)) {
