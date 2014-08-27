@@ -26,14 +26,14 @@ var ListMessagesController = function(resourceId, log) {
     if (me.lastMessageId && !MessagePersistence.doesMessageIdBelongToFeed(me.lastMessageId, me.feedId)) {
       throw exceptions.UnprocessableEntity(printf("The passed in last_message_id <%s> does not belong to the feed specified by the passed in feed id <%s>", me.lastMessageId, me.feedId));
     }
-    return feedPermissionChecker.isUserAuthorizedToView(authenticatedUser, this.feedId)
+    return feedPermissionChecker.isUserAuthorizedToView(authenticatedUser, me.feedId)
       .then(function(feed) {
         if (feed) {
           return MessagePersistence.scanMessages(feed, me.lastMessageId, me.limit).then(function(messages) {
             return responseFactory.success({ 'messages' : messages });
           });
         } else {
-          throw exceptions.Forbidden('You are not authorized to view messages on feed <' + this.feedId + '>');
+          throw exceptions.Forbidden('You are not authorized to view messages on feed <' + me.feedId + '>');
         }
       });
   }

@@ -54,7 +54,7 @@ var CreateFeedController = function(resourceId, log) {
           promises.push(new Member().save({
             'user_id' : memberId,
             'feed_id' : feedId,
-            'last_read_post' : null,
+            'last_read_message_id' : null,
             'is_following' : true,
             'is_muting' : false
           }));
