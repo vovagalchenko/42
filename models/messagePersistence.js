@@ -24,14 +24,6 @@ var messageFields = {
   createdAt: 'd:createdAt'
 }
 
-function expectedBinaryMessageIdLength() {
-  var numBytesInMessage = 0;
-  for (var key in rowKeyComposition) {
-    numBytesInMessage += rowKeyComposition[key]
-  }
-  return numBytesInMessage;
-}
-
 exports.getFeedIdFromMessageId = function(messageId) {
   if (messageId.length !== expectedBinaryMessageIdLength()*2) {
     // The message id length is not valid
@@ -125,6 +117,17 @@ exports.scanMessages = function(feed, boundaryMessageId, limit) {
   return deferred.promise;
 }
 
+exports.getMessage = function(messageId) {
+  var deferred = Q.defer();
+  HBase.getClient().then(function(client) {
+    client.getRow(tableName, hexToBin(messageId), {}, function(io, results) {
+      var result = (results.length === 1)? hbaseRowToMessage(results[0]) : null;
+      deferred.resolve(result);
+    });
+  });
+  return deferred.promise;
+}
+
 /* ==================== MISC HELPERS ==================== */
 
 function getRowKeyBinary(feedId, createdAt) {
@@ -171,6 +174,14 @@ function getFeedPartOfRowKey(feedId) {
     result[rowKeyComposition.numBytesFromMD5 + i] = feedIdByteArray[i];
   }
   return result;
+}
+
+function expectedBinaryMessageIdLength() {
+  var numBytesInMessage = 0;
+  for (var key in rowKeyComposition) {
+    numBytesInMessage += rowKeyComposition[key]
+  }
+  return numBytesInMessage;
 }
 
 /* ==================== BIN/HEX HELPERS ==================== */
