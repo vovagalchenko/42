@@ -23,7 +23,7 @@ var ListMessagesController = function(resourceId, log) {
 
   this.run = function(authenticatedUser, responseFactory) {
     var me = this;
-    if (me.lastMessageId && !MessagePersistence.doesMessageIdBelongToFeed(me.lastMessageId, me.feedId)) {
+    if (me.lastMessageId && MessagePersistence.getFeedIdFromMessageId(me.lastMessageId) !== me.feedId) {
       throw exceptions.UnprocessableEntity(printf("The passed in last_message_id <%s> does not belong to the feed specified by the passed in feed id <%s>", me.lastMessageId, me.feedId));
     }
     return feedPermissionChecker.isUserAuthorizedToView(authenticatedUser, me.feedId)

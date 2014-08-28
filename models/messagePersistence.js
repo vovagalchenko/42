@@ -5,6 +5,18 @@ var uuid = require('node-uuid');
 var crypto = require('crypto');
 var tableName = 'messages';
 
+// The row key in HBase looks like this:
+//  Leading 8 bytes of the MD5 of the feed to which the message belongs
+//  The feed id as an 8 byte integer
+//  MaxDate minus time at which the message was created in milliseconds as an 8 byte integer
+//  2 bytes of a UUID as a tiebreaker in case two messages are posted to the same feed in the same millisecond
+var rowKeyComposition = {
+  numBytesFromMD5: 8,
+  numBytesFromRawFeedId: 8,
+  numBytesReverseTimestamp: 8,
+  numBytesUUID: 2
+};
+
 var messageFields = {
   feedId: 'd:feedId',
   authorUserId: 'd:authorUserId',
@@ -12,10 +24,30 @@ var messageFields = {
   createdAt: 'd:createdAt'
 }
 
-exports.doesMessageIdBelongToFeed = function(messageId, feedId) {
-  var hashedFeed = crypto.createHash('md5').update(feedId).digest('bin');
-  return (messageId.length % 2 === 0 // The message id is valid
-    && messageId.indexOf(crypto.createHash('md5').update(feedId).digest('hex')) === 0);
+function expectedBinaryMessageIdLength() {
+  var numBytesInMessage = 0;
+  for (var key in rowKeyComposition) {
+    numBytesInMessage += rowKeyComposition[key]
+  }
+  return numBytesInMessage;
+}
+
+exports.getFeedIdFromMessageId = function(messageId) {
+  if (messageId.length !== expectedBinaryMessageIdLength()*2) {
+    // The message id length is not valid
+    return undefined;
+  }
+  var rawFeedIdHexString = messageId.substring(rowKeyComposition.numBytesFromMD5*2, (rowKeyComposition.numBytesFromMD5 + rowKeyComposition.numBytesFromRawFeedId)*2);
+  var feedId = hexToInt(rawFeedIdHexString).toString(10);
+  
+  // The for loop below checks the validity of the passed in messageId
+  var feedPartByteArray = getFeedPartOfRowKey(feedId);
+  for (var i = 0; i < feedPartByteArray.length; i++) {
+    if (feedPartByteArray[i] !== parseInt(messageId.substring(i*2, i*2 + 2), 16)) {
+      return undefined;
+    }
+  }
+  return feedId;
 }
 
 exports.persistMessage = function(messageParams) {
@@ -80,7 +112,13 @@ exports.scanMessages = function(feed, boundaryMessageId, limit) {
     ], {}, function(io, scannerId) {
       client.scannerGetList(scannerId, limit, function(res, data) {
         client.scannerClose(scannerId, null);
-        deferred.resolve(data.map(hbaseRowToMessage));
+        var resultingMessages = [];
+        for (var i = 0; i < data.length; i++) {
+          if (i !== 0 || boundaryMessageId !== data[i].row) {
+            resultingMessages.push(hbaseRowToMessage(data[i]));
+          }
+        }
+        deferred.resolve(resultingMessages);
       });
     });
   });
@@ -90,11 +128,7 @@ exports.scanMessages = function(feed, boundaryMessageId, limit) {
 /* ==================== MISC HELPERS ==================== */
 
 function getRowKeyBinary(feedId, createdAt) {
-  var hashedFeed = crypto.createHash('md5').update(feedId).digest('bin');
-  var hashedFeedArray = [];
-  for (var i = 0; i < hashedFeed.length; ++i) {
-    hashedFeedArray[i] = hashedFeed[i];
-  }
+  var hashedFeedArray = getFeedPartOfRowKey(feedId);
   var timestamp = dateToByteArray(createdAt);
   // use the last two bytes of a guid to break ties for two messages sent to the same feed at the same time
   var tieBreaker = uuid.v4(null, [], 0).slice(-2);
@@ -108,16 +142,12 @@ function getRowKeyBinary(feedId, createdAt) {
 }
 
 function dateToByteArray(date) {
-  var byteArray = [0, 0, 0, 0, 0, 0, 0, 0];
-  if (!date) return byteArray;
-  var maxDate = new Date(8640000000000000);
-  var milliseconds = maxDate.getTime() - date.getTime();
-  for (var byteIndex = byteArray.length - 1; byteIndex >= 0; byteIndex--) {
-    var leastSignificantByte= milliseconds & 0xff;
-    byteArray[byteIndex] = leastSignificantByte;
-    milliseconds = (milliseconds - leastSignificantByte)/256;
+  var milliseconds = 0;
+  if (date) {
+    var maxDate = new Date(8640000000000000);
+    milliseconds = maxDate.getTime() - date.getTime();
   }
-  return byteArray;
+  return intTo8ByteArray(milliseconds);
 }
 
 function hbaseRowToMessage(rawHbaseRow) {
@@ -130,7 +160,41 @@ function hbaseRowToMessage(rawHbaseRow) {
   return message;
 }
 
+function getFeedPartOfRowKey(feedId) {
+  var hashedFeed = crypto.createHash('md5').update(feedId).digest('bin');
+  var result = [];
+  for (var i = 0; i < rowKeyComposition.numBytesFromMD5; i++) {
+    result[i] = hashedFeed[i];
+  }
+  var feedIdByteArray = intTo8ByteArray(parseInt(feedId));
+  for (var i = 0; i < rowKeyComposition.numBytesFromRawFeedId; i++) {
+    result[rowKeyComposition.numBytesFromMD5 + i] = feedIdByteArray[i];
+  }
+  return result;
+}
+
 /* ==================== BIN/HEX HELPERS ==================== */
+
+function intTo8ByteArray(integer) {
+  var byteArray = [0, 0, 0, 0, 0, 0, 0, 0];
+  for (var byteIndex = byteArray.length - 1; byteIndex >= 0; byteIndex--) {
+    var leastSignificantByte = integer & 0xff;
+    byteArray[byteIndex] = leastSignificantByte;
+    integer = (integer - leastSignificantByte)/256;
+  }
+  return byteArray;
+}
+
+function hexToInt(hexString) {
+  if (hexString.length % 2 != 0) throw "Hex string length must be divisible by two to represent an array of bytes.";
+  var value = 0;
+  var numBytes = hexString.length / 2;
+  for (var i = 0; i < numBytes; i++) {
+    byteString = hexString.substring(i*2, i*2 + 2);
+    value = (value * 256) + parseInt(byteString, 16);
+  }
+  return value;
+}
 
 function binToHex(binString) {
   var result = "";
@@ -148,7 +212,8 @@ function binToHex(binString) {
 function hexToBin(hexString) {
   if (hexString.length % 2 != 0) throw "Hex string length must be divisible by two to represent an array of bytes.";
   var bin = "";
-  for (var i = 0; i < hexString.length; i++) {
+  var numBytes = hexString.length / 2;
+  for (var i = 0; i < numBytes; i++) {
     var byteString = hexString.substring(i*2, i*2 + 2);
     bin += String.fromCharCode(parseInt(byteString, 16));
   }
