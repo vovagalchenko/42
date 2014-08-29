@@ -1,35 +1,42 @@
 #README
----
 
-#How to install 42?
+## How to install 42?
 
-## Install node
+### Install node
 
-- Go to http://nodejs.org
+- Go to http://nodejs.org, download the latest build and install it.
 
-## Install mysql
+### Install mysql
 
-- Go to http://dev.mysql.com/downloads/mysql/
+- Go to http://dev.mysql.com/downloads/mysql/, download the latest build and install it.
 
-## Install hbase
+### Install hbase
 
-- First install Brew if you don't have it already: http://brew.sh
+- Install Brew if you don't have it already: http://brew.sh
 - Install the latest Java JDK: http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html
-- Install hbase:
+- Install Hbase:
 
- brew install hbase
+```
+brew install hbase
+```
 
-- Start hbase and Thrift
+- Start Hbase and Thrift
 
- sudo hbase master start
- sudo /usr/local/Cellar/hbase/0.98.4/bin/hbase-daemon.sh start thrift -f
+```
+sudo hbase master start
+sudo /usr/local/Cellar/hbase/0.98.4/bin/hbase-daemon.sh start thrift -f
+```
 
-## Initialize the service
+### Initialize the service
 
 - Setup database and dependencies:
 
- sudo npm install --unsafe-perm
+```
+sudo npm install --unsafe-perm
+```
 
 - Start Node
 
- sudo nodemon server | bunyan
+```
+sudo nodemon server | bunyan
+```
