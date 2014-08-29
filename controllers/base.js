@@ -94,25 +94,24 @@ var BaseController = function(resourceId, log) {
             if (!responseDict || !responseDict['id']) {
               throw exceptions.AuthenticationFailure("You've passed in an invalid access token.");
             }
-            return Q.all([
-              new User({ 'box_user_id' : responseDict['id'] }).fetch()
-                .then(function(loggedInUser) {
-                  return modelManager.saveModel(loggedInUser, {
-                    'box_user_id' : responseDict['id'],
-                    'name' : responseDict['name'],
-                    'email' : responseDict['login'],
-                    'img_url' : responseDict['avatar_url'],
-                    'enterprise_id' : responseDict['enterprise']['id']
-                  }, User);
-                }),
-              new AuthCredentials({ 'access_token' : accessToken }).fetch()
-                .then(function(authCredentials) {
-                  return modelManager.saveModel(authCredentials, {
-                    'access_token' : accessToken,
-                    'user_id' : responseDict['id']
-                  }, AuthCredentials);
-                })
-            ]).spread(function(savedUser, savedAuthCredentials) { return savedUser; });
+            return new User({ 'box_user_id' : responseDict['id'] }).fetch()
+              .then(function(loggedInUser) {
+                return modelManager.saveModel(loggedInUser, {
+                  'box_user_id' : responseDict['id'],
+                  'name' : responseDict['name'],
+                  'email' : responseDict['login'],
+                  'img_url' : responseDict['avatar_url'],
+                  'enterprise_id' : responseDict['enterprise']['id']
+                }, User);
+              }).then(function(loggedInUser) {
+                return new AuthCredentials({ 'access_token' : accessToken }).fetch()
+                  .then(function(authCredentials) {
+                    return modelManager.saveModel(authCredentials, {
+                      'access_token' : accessToken,
+                      'user_id' : responseDict['id']
+                    }, AuthCredentials);
+                  }).then(function(authCredentials) { return loggedInUser; });
+              });
           });
         }
     });
