@@ -33,8 +33,8 @@ var schemas = {
     table.string('user_id', 11).notNullable().index().references('box_user_id').inTable('users');
     table.bigInteger('feed_id', 20).unsigned().notNullable().index().references('feed_id').inTable('feeds');
     table.string('last_read_message_id', 52);
-    table.boolean('is_following').notNullable();
-    table.boolean('is_muting').notNullable();
+    table.boolean('is_following').notNullable().defaultTo(true);
+    table.boolean('is_muting').notNullable().defaultTo(false);
     table.timestamps();
   },
   mentions: function(table) {

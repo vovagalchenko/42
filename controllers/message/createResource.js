@@ -19,10 +19,10 @@ var CreateMessageController = function(resourceId, log) {
   this.run = function(authenticatedUser, responseFactory) {
     var me = this;
     return feedPermissionChecker.isUserAuthorizedToPost(authenticatedUser, me.feedId)
-      .then(function(feed) {
+      .spread(function(feed, member) {
         if (feed) {
           return me._persistMessage(authenticatedUser, feed).then(function(message) {
-            return responseFactory.success(message);
+            return responseFactory.created(message);
           });
         } else {
           throw exceptions.Forbidden('You are not authorized to post messages to feed <' + me.feedId + '>');

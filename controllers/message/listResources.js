@@ -27,10 +27,10 @@ var ListMessagesController = function(resourceId, log) {
       throw exceptions.UnprocessableEntity(printf("The passed in last_message_id <%s> does not belong to the feed specified by the passed in feed id <%s>", me.lastMessageId, me.feedId));
     }
     return feedPermissionChecker.isUserAuthorizedToView(authenticatedUser, me.feedId)
-      .then(function(feed) {
+      .spread(function(feed, member) {
         if (feed) {
           return MessagePersistence.scanMessages(feed, me.lastMessageId, me.limit).then(function(messages) {
-            return responseFactory.success({ 'messages' : messages });
+            return responseFactory.ok({ 'messages' : messages });
           });
         } else {
           throw exceptions.Forbidden('You are not authorized to view messages on feed <' + me.feedId + '>');

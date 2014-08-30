@@ -8,7 +8,7 @@ var GetUserController = function(resourceId, log) {
     if (this.resourceId !== authenticatedUser.get('box_user_id')) {
       throw exceptions.AuthenticationFailure("You can't get user information on any user other than you. Your user id is: " + authenticatedUser.get('box_user_id'));
     }
-    return responseFactory.success({ user: authenticatedUser });
+    return responseFactory.ok({ user: authenticatedUser });
   }
 }
 

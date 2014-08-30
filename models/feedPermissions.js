@@ -7,18 +7,16 @@ function isUserAuthorizedToAccessFeed(user, feedId) {
   
   new Feed({ 'feed_id' : feedId }).fetch()
     .then(function(feed) {
-      if (!feed) {
-        deferred.resolve(false);
-      } else if (feed.get('is_public') && feed.get('enterprise_id') === user.get('enterprise_id')) {
-        deferred.resolve(feed);
+      if (!feed || !user) {
+        deferred.resolve([null, null]);
       } else {
         new Member({ 'user_id' : user.id, 'feed_id' : feed.id }).fetch()
           .then(function(member) {
             var result = false;
-            if (member) {
+            if (member !== null || (feed.get('is_public') && feed.get('enterprise_id') === user.get('enterprise_id'))) {
               result = feed;
             }
-            deferred.resolve(result);
+            deferred.resolve([result, member]);
           });
       }
     });

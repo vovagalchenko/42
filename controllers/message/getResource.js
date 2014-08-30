@@ -14,13 +14,13 @@ var GetMessageController = function(messageId, log) {
       throw exceptions.UnprocessableEntity(printf("The passed in message id <%s> is not valid.", messageId));
     }
     return feedPermissionChecker.isUserAuthorizedToView(authenticatedUser, feedId)
-      .then(function(feed) {
+      .spread(function(feed, member) {
         if (feed) {
           return MessagePersistence.getMessage(messageId).then(function(message) {
             if (!message) {
               throw exceptions.NotFound("There is no message with id: " + messageId);
             }
-            return responseFactory.success(message);
+            return responseFactory.ok(message);
           });
         } else {
           throw exceptions.Forbidden('You are not authorized to view this message.');

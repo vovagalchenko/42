@@ -44,27 +44,28 @@ var CreateFeedController = function(resourceId, log) {
       'is_invite_locked' : this.isMembershipLocked,
       'is_channel' : this.isChannel
     }).then(function(savedFeed) {
-      if (!me.isPublic) {
-        var members = me.members;
-        members.push(authenticatedUser.id);
-        var promises = [];
-        var feedId = savedFeed.id;
-        for (var i = 0; i < members.length; i++) {
-          var memberId = members[i];
-          promises.push(new Member().save({
-            'user_id' : memberId,
-            'feed_id' : feedId,
-            'last_read_message_id' : null,
-            'is_following' : true,
-            'is_muting' : false
-          }));
-        }
-        return Q.all(promises).then(function() {
-          return responseFactory.success({ feed: savedFeed });
-        });
+      var members = null;
+      if (me.isPublic) {
+        members = [];
       } else {
-        return responseFactory.success({ feed: savedFeed });
+        members = me.members;
       }
+      members.push(authenticatedUser.id);
+      var promises = [];
+      var feedId = savedFeed.id;
+      for (var i = 0; i < members.length; i++) {
+        var memberId = members[i];
+        promises.push(new Member().save({
+          'user_id' : memberId,
+          'feed_id' : feedId,
+          'last_read_message_id' : null,
+          'is_following' : true,
+          'is_muting' : false
+        }));
+      }
+      return Q.all(promises).then(function() {
+        return responseFactory.created({ feed: savedFeed });
+      });
     });
   }
 }

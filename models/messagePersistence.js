@@ -4,6 +4,7 @@ var Mutation = require('./gen-nodejs/HBase_types.js').Mutation;
 var uuid = require('node-uuid');
 var crypto = require('crypto');
 var tableName = 'messages';
+var maxDate = new Date(8640000000000000);
 
 // The row key in HBase looks like this:
 //  Leading 8 bytes of the MD5 of the feed to which the message belongs
@@ -25,8 +26,17 @@ var messageFields = {
 }
 
 exports.getFeedIdFromMessageId = function(messageId) {
-  if (messageId.length !== expectedBinaryMessageIdLength()*2) {
-    // The message id length is not valid
+  var messageIdComponents = getMessageIdComponents(messageId);
+  return (typeof messageIdComponents === 'undefined')? undefined : messageIdComponents.feedId;
+}
+
+exports.getCreatedAtFromMessageId = function(messageId) {
+  var messageIdComponents = getMessageIdComponents(messageId);
+  return (typeof messageIdComponents === 'undefined')? undefined : messageIdComponents.createdAt;
+}
+
+var getMessageIdComponents = exports.getMessageIdComponents = function(messageId) {
+  if (!isMessageIdLengthValid(messageId)) {
     return undefined;
   }
   var rawFeedIdHexString = messageId.substring(rowKeyComposition.numBytesFromMD5*2, (rowKeyComposition.numBytesFromMD5 + rowKeyComposition.numBytesFromRawFeedId)*2);
@@ -39,7 +49,17 @@ exports.getFeedIdFromMessageId = function(messageId) {
       return undefined;
     }
   }
-  return feedId;
+  var timestampStartIndex = rowKeyComposition.numBytesFromMD5 + rowKeyComposition.numBytesFromRawFeedId;
+  var timestampHexString = messageId.substring(
+    timestampStartIndex*2, (timestampStartIndex + rowKeyComposition.numBytesReverseTimestamp)*2
+  );
+  var timestampInMillis = maxDate.getTime() - hexToInt(timestampHexString);
+  var date = new Date(timestampInMillis);
+
+  return {
+    feedId: feedId,
+    createdAt: date
+  };
 }
 
 exports.persistMessage = function(messageParams) {
@@ -147,7 +167,6 @@ function getRowKeyBinary(feedId, createdAt) {
 function dateToByteArray(date) {
   var milliseconds = 0;
   if (date) {
-    var maxDate = new Date(8640000000000000);
     milliseconds = maxDate.getTime() - date.getTime();
   }
   return intTo8ByteArray(milliseconds);
@@ -182,6 +201,10 @@ function expectedBinaryMessageIdLength() {
     numBytesInMessage += rowKeyComposition[key]
   }
   return numBytesInMessage;
+}
+
+function isMessageIdLengthValid(messageId) {
+  return (messageId.length === expectedBinaryMessageIdLength()*2);
 }
 
 /* ==================== BIN/HEX HELPERS ==================== */
